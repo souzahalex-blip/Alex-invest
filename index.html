@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Investimentos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f4f8; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: #1a202c; margin-bottom: 30px; }
+        
+        /* Resumo */
+        .resumo { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 30px; }
+        .resumo h2 { font-size: 1.2rem; color: #4a5568; margin-bottom: 10px; }
+        .valor-total { font-size: 2.2rem; font-weight: bold; color: #2d3748; }
+        
+        /* Formulário */
+        .form-section { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 30px; }
+        .form-section h2 { font-size: 1.2rem; margin-bottom: 20px; color: #2d3748; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        input, select, button { padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; }
+        input:focus, select:focus { outline: none; border-color: #3182ce; }
+        button { background: #2f855a; color: white; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        button:hover { background: #276749; }
+        
+        /* Cores das Categorias */
+        .cat-renda-fixa { border-left: 4px solid #ecc94b; background: #fff9e6; }
+        .cat-renda-variavel { border-left: 4px solid #4299e1; background: #ebf8ff; }
+        .cat-etf { border-left: 4px solid #9f7aea; background: #faf5ff; }
+        .cat-exterior { border-left: 4px solid #48bb78; background: #f0fff4; }
+        
+        /* Tabela */
+        .table-container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 30px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f7fafc; font-weight: 600; color: #2d3748; }
+        .btn-excluir { background: #e53e3e; padding: 6px 10px; font-size: 0.85rem; }
+        .btn-excluir:hover { background: #c53030; }
+        .btn-atualizar { background: #3182ce; padding: 6px 10px; font-size: 0.85rem; margin-right: 5px; }
+        .btn-atualizar:hover { background: #2b6cb0; }
+        
+        /* Gráficos */
+        .graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; }
+        .grafico-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        
+        /* Legenda */
+        .legenda { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; }
+        .legenda-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .cor { width: 16px; height: 16px; border-radius: 4px; }
+        
+        @media (max-width: 768px) {
+            .graficos { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Meus Investimentos</h1>
+        
+        <!-- Resumo Total -->
+        <div class="resumo">
+            <h2>Patrimônio Total</h2>
+            <div class="valor-total" id="valorTotal">R$ 0,00</div>
+            <p style="color: #718096; margin-top: 8px;">Última atualização: <span id="dataAtualizacao">—</span></p>
+        </div>
+        
+        <!-- Formulário de Cadastro -->
+        <div class="form-section">
+            <h2>➕ Adicionar Ativo</h2>
+            <div class="form-grid">
+                <input type="text" id="ticker" placeholder="Código (ex: PETR4)" required>
+                <input type="text" id="nome" placeholder="Nome do ativo">
+                <select id="categoria">
+                    <option value="renda-fixa">🏦 Renda Fixa</option>
+                    <option value="renda-variavel">📈 Renda Variável</option>
+                    <option value="etf">📊 ETFs</option>
+                    <option value="exterior">🌎 Exterior</option>
+                </select>
+                <input type="number" id="quantidade" placeholder="Quantidade" step="0.01" required>
+                <input type="number" id="valorUnitario" placeholder="Valor unitário R$" step="0.01" required>
+                <button onclick="adicionarAtivo()">Adicionar</button>
+            </div>
+        </div>
+        
+        <!-- Legenda das Cores -->
+        <div style="background: white; padding: 15px 25px; border-radius: 12px; margin-bottom: 20px;">
+            <p style="font-weight: 600; margin-bottom: 8px;">Legenda:</p>
+            <div class="legenda">
+                <div class="legenda-item"><div class="cor" style="background: #ecc94b;"></div> Renda Fixa</div>
+                <div class="legenda-item"><div class="cor" style="background: #4299e1;"></div> Renda Variável</div>
+                <div class="legenda-item"><div class="cor" style="background: #9f7aea;"></div> ETFs</div>
+                <div class="legenda-item"><div class="cor" style="background: #48bb78;"></div> Exterior</div>
+            </div>
+        </div>
+        
+        <!-- Lista de Ativos -->
+        <div class="table-container">
+            <h2 style="margin-bottom: 15px;">📋 Meus Ativos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Categoria</th>
+                        <th>Quantidade</th>
+                        <th>Valor Unit.</th>
+                        <th>Valor Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="listaAtivos">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #718096; padding: 20px;">Nenhum ativo cadastrado ainda</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Gráficos -->
+        <div class="graficos">
+            <div class="grafico-card">
+                <h3 style="margin-bottom: 15px; color: #2d3748;">📊 Distribuição por Categoria</h3>
+                <canvas id="graficoPizza" height="250"></canvas>
+            </div>
+            <div class="grafico-card">
+                <h3 style="margin-bottom: 15px; color: #2d3748;">📈 Patrimônio por Categoria (R$)</h3>
+                <canvas id="graficoBarras" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Armazenamento dos ativos
+        let ativos = JSON.parse(localStorage.getItem('ativos')) || [];
+        
+        // Cores por categoria
+        const cores = {
+            'renda-fixa': '#ecc94b',
+            'renda-variavel': '#4299e1',
+            'etf': '#9f7aea',
+            'exterior': '#48bb78'
+        };
+        
+        const nomesCategorias = {
+            'renda-fixa': 'Renda Fixa',
+            'renda-variavel': 'Renda Variável',
+            'etf': 'ETFs',
+            'exterior': 'Exterior'
+        };
+        
+        // Gráficos
+        let graficoPizza, graficoBarras;
+        
+        function inicializarGraficos() {
+            const ctxPizza = document.getElementById('graficoPizza').getContext('2d');
+            const ctxBarras = document.getElementById('graficoBarras').getContext('2d');
+            
+            graficoPizza = new Chart(ctxPizza, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: Object.values(cores) }] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+            
+            graficoBarras = new Chart(ctxBarras, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Valor (R$)', data: [], backgroundColor: Object.values(cores) }] },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+        }
+        
+        function atualizarGraficos() {
+            const totaisPorCategoria = {
+                'renda-fixa': 0, 'renda-variavel': 0, 'etf': 0, 'exterior': 0
+            };
+            
+            ativos.forEach(a => {
+                totaisPorCategoria[a.categoria] += a.quantidade * a.valorUnitario;
+            });
+            
+            const labels = [];
+            const valores = [];
+            
+            Object.entries(totaisPorCategoria).forEach(([cat, val]) => {
+                if (val > 0) {
+                    labels.push(nomesCategorias[cat]);
+                    valores.push(val.toFixed(2));
+                }
+            });
+            
+            graficoPizza.data.labels = labels;
+            graficoPizza.data.datasets[0].data = valores;
+            graficoPizza.update();
+            
+            graficoBarras.data.labels = labels;
+            graficoBarras.data.datasets[0].data = valores;
+            graficoBarras.update();
+        }
+        
+        function formatarMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+        }
+        
+        function adicionarAtivo() {
+            const ticker = document.getElementById('ticker').value.toUpperCase();
+            const nome = document.getElementById('nome').value || ticker;
+            const categoria = document.getElementById('categoria').value;
+            const quantidade = parseFloat(document.getElementById('quantidade').value);
+            const valorUnitario = parseFloat(document.getElementById('valorUnitario').value);
+            
+            if (!ticker || !quantidade || !valorUnitario) {
+                alert('Preencha todos os campos!');
+                return;
+            }
+            
+            const ativo = {
+                id: Date.now(),
+                ticker,
+                nome,
+                categoria,
+                quantidade,
+                valorUnitario
+            };
+            
+            ativos.push(ativo);
+            salvarEAtualizar();
+            
+            // Limpar formulário
+            document.getElementById('ticker').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('quantidade').value = '';
+            document.getElementById('valorUnitario').value = '';
+        }
+        
+        function excluirAtivo(id) {
+            if (confirm('Tem certeza que deseja excluir este ativo?')) {
+                ativos = ativos.filter(a => a.id !== id);
+                salvarEAtualizar();
+            }
+        }
+        
+        async function atualizarCotacao(ticker, id) {
+            alert(`Buscando cotação para ${ticker}...\n\n(Em uma versão completa, buscaria online automaticamente)`);
+        }
+        
+        function salvarEAtualizar() {
+            localStorage.setItem('ativos', JSON.stringify(ativos));
+            renderizarLista();
+            atualizarTotal();
+            atualizarGraficos();
+            document.getElementById('dataAtualizacao').textContent = new Date().toLocaleString('pt-BR');
+        }
+        
+        function renderizarLista() {
+            const tbody = document.getElementById('listaAtivos');
+            
+            if (ativos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #718096; padding: 20px;">Nenhum ativo cadastrado ainda</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = ativos.map(a => `
+                <tr class="cat-${a.categoria}">
+                    <td><strong>${a.ticker}</strong></td>
+                    <td>${a.nome}</td>
+                    <td>${nomesCategorias[a.categoria]}</td>
+                    <td>${a.quantidade}</td>
+                    <td>${formatarMoeda(a.valorUnitario)}</td>
+                    <td><strong>${formatarMoeda(a.quantidade * a.valorUnitario)}</strong></td>
+                    <td>
+                        <button class="btn-atualizar" onclick="atualizarCotacao('${a.ticker}', ${a.id})">🔄</button>
+                        <button class="btn-excluir" onclick="excluirAtivo(${a.id})">✕</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function atualizarTotal() {
+            const total = ativos.reduce((soma, a) => soma + (a.quantidade * a.valorUnitario), 0);
+            document.getElementById('valorTotal').textContent = formatarMoeda(total);
+        }
+        
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarGraficos();
+            renderizarLista();
+            atualizarTotal();
+            atualizarGraficos();
+            document.getElementById('dataAtualizacao').textContent = new Date().toLocaleString('pt-BR');
+        });
+    </script>
+</body>
+</html>
